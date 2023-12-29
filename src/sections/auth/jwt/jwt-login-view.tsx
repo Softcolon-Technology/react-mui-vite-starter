@@ -1,7 +1,7 @@
-import * as Yup from 'yup';
+import * as z from 'zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
@@ -17,7 +17,6 @@ import { useRouter, useSearchParams } from 'src/routes/hooks';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
-import { useAuthContext } from 'src/auth/hooks';
 import { PATH_AFTER_LOGIN } from 'src/config-global';
 
 import Iconify from 'src/components/iconify';
@@ -26,8 +25,6 @@ import FormProvider, { RHFTextField } from 'src/components/hook-form';
 // ----------------------------------------------------------------------
 
 export default function JwtLoginView() {
-  const { login } = useAuthContext();
-
   const router = useRouter();
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -38,9 +35,12 @@ export default function JwtLoginView() {
 
   const password = useBoolean();
 
-  const LoginSchema = Yup.object().shape({
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
-    password: Yup.string().required('Password is required'),
+  const LoginSchema = z.object({
+    email: z
+      .string()
+      .email('Email must be a valid email address')
+      .refine((data) => data.trim() !== '', { message: 'Email is required' }),
+    password: z.string().refine((data) => data.trim() !== '', { message: 'Password is required' }),
   });
 
   const defaultValues = {
@@ -49,7 +49,7 @@ export default function JwtLoginView() {
   };
 
   const methods = useForm({
-    resolver: yupResolver(LoginSchema),
+    resolver: zodResolver(LoginSchema),
     defaultValues,
   });
 
@@ -61,7 +61,7 @@ export default function JwtLoginView() {
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      await login?.(data.email, data.password);
+      // await login?.(data.email, data.password);
 
       router.push(returnTo || PATH_AFTER_LOGIN);
     } catch (error) {
